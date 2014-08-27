@@ -1,0 +1,90 @@
+
+异步系统事件
+
+信号（signal） -- 进程间通讯的方式，是一种软件中断，一个进程收到了信号就会打乱当前程序执行的流程优先处理信号。
+
+几个常用的信号：
+
+SIGINT 终止进程 中断进程 （control+c）
+
+SIGTERM 终止进程 软件终止信号
+
+SIGKILL 终止进程 杀死进程
+
+SIGALRM 闹钟信号
+
+
+进程结束信号 SIGTERM 和 SIGKILL 的区别
+
+1.SIGTERM 比较友好，进程能够捕捉这个信号，根据您的需求来关闭程序。在关闭程序之前。您可以结束打开文件的记录文件和完成正在做的任务，在某些情况下，假如进程不能中断，那么进程可以忽略这个SIGTERM信号。
+
+
+2.对于SIGKILL信号，进程是不能忽略的。这是一个不管您在做什么，立刻停止的信号。假如您发送SIGKILL信号给进程，Linux就将进程停止在那里
+
+
+发送信号一般有两种原因：
+
+1.被动式 内核检测到一个系统事件,列如，子进程退出会像父进程发送SIGCHLD信号，键盘按下control+c 会发送SIGINT信号
+
+2.主动式 通过系统调用kill 来向指定进程发送信号
+
+Linux 下 kill -l 可以查看信号集合
+
+在 python 中 进入交互器：
+	import signal
+	dir(signal)
+
+
+
+操作系统规定了进程收到信号以后的默认行为
+
+但是，我们可以通过绑定信号处理函数来修改进程收到信号以后的行为
+
+有两个信号是不可更改的SIGTOP 和 SIGKILL
+
+
+见列子：signa_fs.py 和singal_js.py
+
+
+SIGCHID信号：
+
+显示一个子进程结束后自动向父进程发送SIGCHID信号的列子。
+
+signal_CHLD.py
+
+
+使用信号需要特别注意的地方:
+
+SIGUSR1:USR是user-defined的缩写，即用户定义的。
+
+如果一个进程收到一个SIGUSR1信号，然后执行信号绑定函数，第二个SIGUSR2信号又来了，第一个信号没有被处理完毕的话，第二个就会丢弃。
+所以尽量不要在多线程中使用信号
+
+列子演示：
+	接收信号的程序，你会发现如果有另外一端使用多线程向这个进程发送信号，会有一些信号遗漏
+
+	
+
+
+
+signal_multhread_js.py   signal_multhread_fs.py
+
+
+
+Alarms 是一个特殊信号类型，它可以让程序要求系统经过一段时间对自己发送通知。os 标准模块中指出，它可用于避免无限制阻塞 I/O 操作或其它系统调用。
+
+像下面例子，原本程序睡眠 10 后才打印出　print 'After :', time.ctime()，但是由于 signal.alarm(2)，所以 2 秒后就执行了打印。
+[python] view plaincopy
+import signal  
+import time  
+  
+def receive_alarm(signum, stack):  
+    print 'Alarm :', time.ctime()  
+  
+# Call receive_alarm in 2 seconds  
+signal.signal(signal.SIGALRM, receive_alarm)  
+signal.alarm(2)  
+  
+print 'Before:', time.ctime()  
+time.sleep(10)  
+print 'After :', time.ctime()  
